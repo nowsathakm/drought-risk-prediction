@@ -1,0 +1,1 @@
+streamlit, joblib, pandas, numpy, shap, matplotlib, streamlit-shap, catboost
