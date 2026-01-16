@@ -23,99 +23,118 @@ def load_assets():
 
 model, scaler = load_assets()
 
-st.title("🌾 Dry Zone Agricultural Drought Risk Forecaster")
+# ─── App title & intro ───────────────────────────────────────────────────────
+st.set_page_config(page_title="Dry Zone Drought Forecaster", layout="wide")
+st.title("🌾 Dry Zone Drought Risk Predictor")
 st.markdown("""
-This app predicts drought risk for the next 1–3 months in Sri Lanka's dry zone (e.g., Puttalam, Hambantota, Trincomalee) based on recent weather data.  
-Enter values below to simulate a scenario. The model uses a trained CatBoost classifier with features like lagged rainfall and evapotranspiration.
+Select a dry-zone city and enter recent weather values to forecast drought risk for the next 1–3 months.  
+The model uses CatBoost trained on Sri Lanka weather data (2010–2023) with SHAP explanations.
 """)
 
-# ─── Sidebar for user inputs ─────────────────────────────────────────────────
-st.sidebar.header("Input Weather Parameters")
-st.sidebar.markdown("Adjust sliders/dropdowns for a monthly snapshot.")
+# ─── City & Season selection ─────────────────────────────────────────────────
+col1, col2 = st.columns(2)
 
-# Numerical inputs (sliders with realistic dry-zone ranges)
-temperature_2m_mean = st.sidebar.slider("Average Temperature (°C)", 22.0, 38.0, 30.0, step=0.5)
-temperature_2m_max = st.sidebar.slider("Max Temperature (°C)", 25.0, 42.0, 35.0, step=0.5)
-precipitation_sum = st.sidebar.slider("Monthly Rainfall (mm)", 0.0, 600.0, 150.0, step=10.0)
-et0_fao_evapotranspiration = st.sidebar.slider("Evapotranspiration ET0 (mm/month)", 60.0, 220.0, 130.0, step=5.0)
-shortwave_radiation_sum = st.sidebar.slider("Shortwave Radiation Sum (MJ/m²)", 400.0, 900.0, 650.0, step=10.0)
-windspeed_10m_max = st.sidebar.slider("Max Wind Speed (km/h)", 5.0, 40.0, 20.0, step=1.0)
+with col1:
+    city = st.selectbox(
+        "Select Dry Zone City",
+        ["Puttalam", "Hambantota", "Trincomalee", "Mannar", "Jaffna", "Kurunegala"],
+        index=0  # default to Puttalam
+    )
 
-# Cyclic month features (select month → compute sin/cos)
-month = st.sidebar.slider("Month of Year", 1, 12, 1, step=1)
+with col2:
+    season = st.selectbox("Current Season", ["Maha", "Yala"])
+
+# Month selection (affects cyclic features)
+month = st.slider("Current Month (1=Jan, 12=Dec)", 1, 12, 1)
 month_sin = np.sin(2 * np.pi * month / 12)
 month_cos = np.cos(2 * np.pi * month / 12)
-st.sidebar.markdown(f"Computed: Month Sin = {month_sin:.2f}, Month Cos = {month_cos:.2f}")
 
-# Categorical season
-season = st.sidebar.selectbox("Season", ["Maha", "Yala"])
+# ─── Core weather inputs (reduced to 4 key ones) ─────────────────────────────
+st.subheader("Recent Monthly Weather")
+col3, col4, col5 = st.columns(3)
 
-# Lagged features (sliders for 1/3/6 months)
-st.sidebar.subheader("Lagged Values")
-precip_lag_1 = st.sidebar.slider("1-Month Lagged Rainfall (mm)", 0.0, 600.0, 150.0, step=10.0)
-precip_lag_3 = st.sidebar.slider("3-Month Lagged Rainfall (mm)", 0.0, 1800.0, 450.0, step=50.0)
-precip_lag_6 = st.sidebar.slider("6-Month Lagged Rainfall (mm)", 0.0, 3600.0, 900.0, step=100.0)
+with col3:
+    precipitation_sum = st.slider("Current Month Rainfall (mm)", 0, 600, 150, step=10)
 
-et0_lag_1 = st.sidebar.slider("1-Month Lagged ET0 (mm)", 60.0, 220.0, 130.0, step=5.0)
-et0_lag_3 = st.sidebar.slider("3-Month Lagged ET0 (mm)", 180.0, 660.0, 390.0, step=15.0)
-et0_lag_6 = st.sidebar.slider("6-Month Lagged ET0 (mm)", 360.0, 1320.0, 780.0, step=30.0)
+with col4:
+    temperature_2m_mean = st.slider("Avg Temperature (°C)", 22.0, 38.0, 30.0, step=0.5)
 
-temp_lag_1 = st.sidebar.slider("1-Month Lagged Avg Temp (°C)", 22.0, 38.0, 30.0, step=0.5)
-temp_lag_3 = st.sidebar.slider("3-Month Lagged Avg Temp (°C)", 22.0, 38.0, 30.0, step=0.5)
-temp_lag_6 = st.sidebar.slider("6-Month Lagged Avg Temp (°C)", 22.0, 38.0, 30.0, step=0.5)
+with col5:
+    et0_fao_evapotranspiration = st.slider("Evapotranspiration ET0 (mm)", 60, 220, 130, step=5)
 
-# ─── Main content: Prediction button ─────────────────────────────────────────
-if st.button("Predict Drought Risk", type="primary", use_container_width=True):
-    # Create input DataFrame matching exact training features and order
-    input_data = pd.DataFrame({
+# Most important lag (from SHAP)
+precip_lag_3 = st.slider("3-Month Lagged Rainfall (mm)", 0, 1800, 450, step=50)
+
+# ─── Hidden/default values for other lags (simplifies UI) ────────────────────
+# Use realistic median defaults from your training data (adjust if you know exact medians)
+default_lag_values = {
+    'precip_lag_1': 150.0,
+    'precip_lag_6': 900.0,
+    'et0_lag_1': 130.0,
+    'et0_lag_3': 390.0,
+    'et0_lag_6': 780.0,
+    'temp_lag_1': 30.0,
+    'temp_lag_3': 30.0,
+    'temp_lag_6': 30.0,
+    'shortwave_radiation_sum': 650.0,
+    'windspeed_10m_max': 20.0,
+    'temperature_2m_max': 35.0
+}
+
+# ─── Predict button ──────────────────────────────────────────────────────────
+if st.button("Predict Drought Risk", type="primary"):
+    # Build input DataFrame with exact training column order
+    input_dict = {
         'temperature_2m_mean': [temperature_2m_mean],
-        'temperature_2m_max': [temperature_2m_max],
+        'temperature_2m_max': [default_lag_values['temperature_2m_max']],
         'precipitation_sum': [precipitation_sum],
         'et0_fao_evapotranspiration': [et0_fao_evapotranspiration],
-        'shortwave_radiation_sum': [shortwave_radiation_sum],
-        'windspeed_10m_max': [windspeed_10m_max],
+        'shortwave_radiation_sum': [default_lag_values['shortwave_radiation_sum']],
+        'windspeed_10m_max': [default_lag_values['windspeed_10m_max']],
         'month_sin': [month_sin],
         'month_cos': [month_cos],
         'season': [season],
-        'precip_lag_1': [precip_lag_1],
+        'precip_lag_1': [default_lag_values['precip_lag_1']],
         'precip_lag_3': [precip_lag_3],
-        'precip_lag_6': [precip_lag_6],
-        'et0_lag_1': [et0_lag_1],
-        'et0_lag_3': [et0_lag_3],
-        'et0_lag_6': [et0_lag_6],
-        'temp_lag_1': [temp_lag_1],
-        'temp_lag_3': [temp_lag_3],
-        'temp_lag_6': [temp_lag_6]
-    })
+        'precip_lag_6': [default_lag_values['precip_lag_6']],
+        'et0_lag_1': [default_lag_values['et0_lag_1']],
+        'et0_lag_3': [default_lag_values['et0_lag_3']],
+        'et0_lag_6': [default_lag_values['et0_lag_6']],
+        'temp_lag_1': [default_lag_values['temp_lag_1']],
+        'temp_lag_3': [default_lag_values['temp_lag_3']],
+        'temp_lag_6': [default_lag_values['temp_lag_6']]
+    }
 
-    # Scale numerical features (match training)
-    numerical_features = [col for col in input_data.columns if col != 'season']
-    input_data[numerical_features] = scaler.transform(input_data[numerical_features])
+    input_df = pd.DataFrame(input_dict)
+
+    # Scale numerical columns
+    numerical_cols = [col for col in input_df.columns if col != 'season']
+    input_df[numerical_cols] = scaler.transform(input_df[numerical_cols])
 
     # Predict
-    prob = model.predict_proba(input_data)[0][1]  # Probability of drought (class 1)
+    prob = model.predict_proba(input_df)[0][1]
     risk_level = "High" if prob > 0.7 else "Moderate" if prob > 0.4 else "Low"
 
-    st.header(f"Predicted Drought Risk: **{risk_level}** ({prob:.1%} probability)")
-    
+    st.subheader(f"Predicted Risk: **{risk_level}** ({prob:.1%} probability)")
+
     if risk_level == "High":
-        st.error("**High Risk Detected** – Recommend immediate actions: prioritize irrigation, use drought-tolerant seeds, monitor tank levels closely.")
+        st.error("**High Risk** – Prioritize irrigation, consider drought-tolerant varieties, monitor tanks closely.")
     elif risk_level == "Moderate":
-        st.warning("**Moderate Risk** – Stay vigilant: check forecasts weekly and prepare contingency plans for potential dry spells.")
+        st.warning("**Moderate Risk** – Monitor closely and prepare contingency plans.")
     else:
-        st.success("**Low Risk** – Normal conditions expected: continue standard farming practices.")
+        st.success("**Low Risk** – Normal conditions expected.")
 
-    # ─── SHAP Explanation ────────────────────────────────────────────────────
-    st.subheader("Model Explanation (SHAP)")
+    # SHAP explanation
+    st.subheader("Why this prediction? (SHAP)")
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_data)
+    shap_values = explainer.shap_values(input_df)
 
-    # Force plot for this prediction
-    st_shap(shap.force_plot(explainer.expected_value, shap_values[0], input_data))
+    # Force plot
+    st_shap(shap.force_plot(explainer.expected_value, shap_values[0], input_df))
 
-    # Summary bar plot for feature importance
-    fig, ax = plt.subplots(figsize=(10, 6))
-    shap.summary_plot(shap_values, input_data, plot_type="bar", show=False)
+    # Bar plot
+    fig, ax = plt.subplots(figsize=(10, 5))
+    shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
     st.pyplot(fig)
 
 # ─── Footer ──────────────────────────────────────────────────────────────────
