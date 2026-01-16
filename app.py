@@ -74,6 +74,9 @@ defaults = {
 
 # ─── Prediction ──────────────────────────────────────────────────────────────
 if st.button("Predict Drought Risk", type="primary"):
+    if precip_lag_3 < 100:  # extreme low lagged rain
+        defaults['precip_lag_1'] = 0.0
+        defaults['precip_lag_6'] = 0.0
     input_dict = {
         'temperature_2m_mean': [temp_mean],
         'temperature_2m_max': [defaults['temperature_2m_max']],
