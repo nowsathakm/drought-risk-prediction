@@ -23,7 +23,6 @@ Due to instability in per-city SPEI computation, a domain-appropriate proxy targ
 
 For usability, the model is integrated into a **Streamlit web app** allowing users to input weather values and view predictions with interactive SHAP explanations. A 3–5 minute demo video is included.
 
-This work satisfies MSc AI assignment requirements (local dataset, novel algorithm, XAI, front-end bonus) and is suitable for conference presentation (e.g., ICARC 2026).
 
 ## Features
 
