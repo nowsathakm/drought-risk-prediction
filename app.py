@@ -24,7 +24,6 @@ def load_assets():
 model, scaler = load_assets()
 
 # ─── App title & intro ───────────────────────────────────────────────────────
-st.set_page_config(page_title="Dry Zone Drought Forecaster", layout="wide")
 st.title("🌾 Dry Zone Drought Risk Predictor")
 st.markdown("""
 Select a dry-zone city and enter recent weather values to forecast drought risk for the next 1–3 months.  
