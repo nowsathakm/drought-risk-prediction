@@ -1,10 +1,18 @@
 import streamlit as st
+
+# ─── App configuration (MUST be first Streamlit call) ───────────────────────
+st.set_page_config(
+    page_title="Dry Zone Drought Risk Forecaster",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import joblib
 import pandas as pd
 import numpy as np
 import shap
 import matplotlib.pyplot as plt
-from streamlit_shap import st_shap  # pip install streamlit-shap (optional for better SHAP rendering)
+from streamlit_shap import st_shap
 
 # ─── Load model and scaler ───────────────────────────────────────────────────
 @st.cache_resource
@@ -14,13 +22,6 @@ def load_assets():
     return model, scaler
 
 model, scaler = load_assets()
-
-# ─── App configuration ───────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Dry Zone Drought Risk Forecaster",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 st.title("🌾 Dry Zone Agricultural Drought Risk Forecaster")
 st.markdown("""
