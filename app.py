@@ -100,7 +100,7 @@ if st.button("Predict Drought Risk", type="primary"):
     input_df[num_cols] = scaler.transform(input_df[num_cols])
 
     prob = model.predict_proba(input_df)[0][1]
-    risk = "High" if prob > 0.7 else "Moderate" if prob > 0.4 else "Low"
+    risk = "High" if prob > 0.55 else "Moderate" if prob > 0.25 else "Low"
 
     st.subheader(f"**{risk} Risk** ({prob:.1%} probability)")
 
