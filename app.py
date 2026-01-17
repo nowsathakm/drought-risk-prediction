@@ -55,7 +55,7 @@ with col3:
     et0_current = st.slider("Evapotranspiration ET0 (mm)", 60, 220, 130, step=5)
 
 # Most important lag (from SHAP)
-precip_lag_3 = st.slider("3-Month Lagged Rainfall (mm)", 0, 1800, 400, step=50)
+precip_lag_3 = st.slider("3-Month Lagged Rainfall (mm)", 0, 1000, 400, step=10)
 
 # ─── Hidden defaults (realistic medians from dry-zone data) ──────────────────
 defaults = {
@@ -126,5 +126,5 @@ if st.button("Predict Drought Risk", type="primary"):
 
 # ─── Footer ──────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown("**Note**: This is a prototype for educational purposes. Predictions based on trained CatBoost model using Sri Lanka Weather Dataset. For real use, consult local agricultural experts.")
+st.markdown("**Note**: This is a prototype for educational purposes. Predictions based on trained CatBoost model using Sri Lanka Weather Dataset.")
 st.markdown("Developed by A.K.M. Nowsath for AML Assignment – January 2026")
