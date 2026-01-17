@@ -113,16 +113,21 @@ if st.button("Predict Drought Risk", type="primary"):
         st.warning("**Moderate Risk** – Monitor closely and prepare contingency plans.")
     else:
         st.success("**Low Risk** – Normal conditions expected.")
-
+    
+    # SHAP explanation
     st.subheader("Why this prediction? (SHAP)")
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(input_df)
 
+    # Force plot
     st_shap(shap.force_plot(explainer.expected_value, shap_values[0], input_df))
-    
+    st.markdown("**Force Plot**: Shows how each input feature pushes the prediction. Red = increases drought risk, Blue = decreases risk. Longer bars = stronger effect.")
+
+    # Bar plot
     fig, ax = plt.subplots(figsize=(10, 4))
     shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
     st.pyplot(fig)
+    st.markdown("**Bar Plot**: Average importance of each feature. Longer bar = more influence on predictions across many cases.")
 
 # ─── Footer ──────────────────────────────────────────────────────────────────
 st.markdown("---")
