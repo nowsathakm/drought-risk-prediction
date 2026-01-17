@@ -37,11 +37,17 @@ For usability, the model is integrated into a **Streamlit web app** allowing use
 
 ## Project Structure
 drought-risk-prediction/
+
 ├── app.py                      # Streamlit front-end application
+
 ├── drought_model.joblib        # Trained CatBoost model
+
 ├── scaler.joblib               # Fitted StandardScaler
+
 ├── requirements.txt            # Python dependencies
+
 ├── images/                     # Plots for report (ROC, confusion matrix, time-series, SHAP)
+
 └── README.md              
 
 
