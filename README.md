@@ -7,7 +7,9 @@
 ![SHAP](https://img.shields.io/badge/SHAP-0.4+-green)
 
 **Author**: Nowsath A.K.M
+
 **University**: University of Moratuwa
+
 **Location Focus**: Dry Zone Districts (Puttalam, Hambantota, Trincomalee, Mannar, Jaffna, Kurunegala, Kalmunai)
 
 ## Overview
