@@ -34,7 +34,7 @@ The model uses CatBoost trained on Sri Lanka weather data (2010–2023) with SHA
 col_city, col_season = st.columns(2)
 with col_city:
     city = st.selectbox("Dry Zone City", 
-                        ["Puttalam", "Hambantota", "Trincomalee", "Mannar", "Jaffna", "Kurunegala"],
+                        ["Puttalam", "Mannar", "Jaffna", "Anuradhapura", "Trincomalee", "Polonnaruwa", "Kurunegala", "Hambantota",],
                         index=0)
 
 with col_season:
