@@ -122,6 +122,7 @@ if st.button("Predict Drought Risk", type="primary"):
     # Force plot
     st_shap(shap.force_plot(explainer.expected_value, shap_values[0], input_df))
     st.markdown("**Force Plot**: Shows how each input feature pushes the prediction. Red = increases drought risk, Blue = decreases risk. Longer bars = stronger effect.")
+    st.markdown("---")
 
     # Bar plot
     fig, ax = plt.subplots(figsize=(10, 4))
